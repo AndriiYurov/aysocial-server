@@ -15,18 +15,18 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      
       min: 6,
       max: 64,
     },
     secret: {
       type: String,
-      required: true,
+      
     },
     username: {
       type: String,
       unique: true,
-      required: true,
+      
     },
     about: {},
     image: {

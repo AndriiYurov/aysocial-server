@@ -1,19 +1,44 @@
 const jwt = require("jsonwebtoken");
 const { Post } = require("../models/post");
-const { User } = require("../models/user")
+const { User } = require("../models/user");
+const axios = require("axios");
 
 module.exports.requireSignin = async (req, res, next) => {
   const token = req.headers.authorization;
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) {
-      //   return res.json({ message: "Unauthorized" });
-      return res.status(401).send("Token expired or does not exist");
-    }
+  try {
+    const { data } = await axios.get(
+      `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${token}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      }
+    );
 
-    req.user = decoded;
+    req.user = await User.findOne({ email: data.email });
     next();
-  });
+  
+  } catch (err) {
+console.log("catch err", err)
+jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+  if (err) {
+    //   return res.json({ message: "Unauthorized" });
+    return res.status(401).send("Token expired or does not exist");
+  }
+
+  req.user = decoded;
+  next();
+});
+  }
+
+  
+
+ 
+
+  
+ 
 };
 
 module.exports.canEditDeletePost = async (req, res, next) => {

@@ -3,6 +3,29 @@ const { hashPassword, comparePassword } = require("../helpers/auth");
 const jwt = require("jsonwebtoken");
 const { nanoid } = require("nanoid");
 
+const axios = require("axios");
+
+module.exports.loginGoogle = async (req, res) => {
+  const { google_token } = req.body;
+
+  try {
+    const { data } = await axios.get(
+      `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${google_token}`,
+      {
+        headers: {
+          Authorization: `Bearer ${google_token}`,
+          Accept: "application/json",
+        },
+      }
+    );
+    res.json({ google_token, user: data });
+    console.log(data);
+  } catch (err) {
+    console.log(err);
+    return res.status(401).send("Unauthorized");
+  }
+};
+
 module.exports.register = async (req, res) => {
   const { name, email, password, secret } = req.body;
   if (!name) return res.status(400).send("Name is required");
@@ -35,10 +58,45 @@ module.exports.register = async (req, res) => {
 
 module.exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, google_token } = req.body;
+    
+    if (google_token) {
+      const { data } = await axios.get(
+        `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${google_token}`,
+        {
+          headers: {
+            Authorization: `Bearer ${google_token}`,
+            Accept: "application/json",
+          },
+        }
+      );
+      
+      if (data.error) {
+        return res.status(401).send("Unauthorized");
+      } else {
+        const user = await User.findOne({ email: data.email });
+        if (!user) {
+          const user = new User({
+            name: data.name,
+            email: data.email,
+          });
+          console.log(user)
+          await user.save();
+          return res.json({ google_token, user });
+        }
+
+        return res.json({ google_token, user });
+        
+      }
+    }
     // check if db has user
     const user = await User.findOne({ email });
     if (!user) return res.json({ error: "No user found" });
+    //check login method
+    if (!user.password) {
+      return res.status(401).send("Please login via the method you used to signup")
+      
+  }
     // check password
     const match = await comparePassword(password, user.password);
     if (!match) return res.status(400).send("Wrong password");
@@ -50,7 +108,8 @@ module.exports.login = async (req, res) => {
     user.secret = undefined;
     res.json({ token, user });
   } catch (err) {
-    return res.status(400).send("Error. Try again");
+    console.log(err)
+    return res.status(401).send("Unauthorized");
   }
 };
 

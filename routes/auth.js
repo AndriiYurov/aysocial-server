@@ -13,6 +13,7 @@ const {
   userUnfollow,
   searchUser,
   getUser,
+  loginGoogle,
 } = require("../controllers/auth");
 const { requireSignin, isAdmin } = require("../middlewares");
 const router = express.Router();
@@ -30,5 +31,8 @@ router.get("/search-user/:query", searchUser);
 router.get("/user/:username", getUser)
 
 router.get("/current-admin", requireSignin, isAdmin, currentUser)
+
+//google
+router.post("/login-google", loginGoogle)
 
 module.exports = router;
