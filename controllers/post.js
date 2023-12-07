@@ -101,7 +101,7 @@ module.exports.newsFeed = async (req, res) => {
     following.push(req.user._id);
     //pagination
     const currentPage = req.params.page || 1;
-    const perPage = 3;
+    const perPage = 10;
 
     const posts = await Post.find({ postedBy: { $in: following } })
       .skip((currentPage - 1) * perPage)
