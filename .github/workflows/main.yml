@@ -51,3 +51,4 @@ jobs:
               echo "${{ secrets.PROD_ENV_FILE }}" > .env &&
               pm2 restart server.js --update-env
               '
+            
