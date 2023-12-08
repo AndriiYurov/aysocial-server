@@ -38,13 +38,13 @@ module.exports.register = async (req, res) => {
   if (exist) return res.status(400).send("email is taken");
 
   const hashedPassword = await hashPassword(password);
-
+  const uniqueUserName = nanoid(6);
   const user = new User({
     name,
     email,
     password: hashedPassword,
     secret,
-    username: nanoid(6),
+    username: `User${uniqueUserName}`,
   });
   try {
     await user.save();
@@ -59,7 +59,7 @@ module.exports.register = async (req, res) => {
 module.exports.login = async (req, res) => {
   try {
     const { email, password, google_token } = req.body;
-    
+
     if (google_token) {
       const { data } = await axios.get(
         `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${google_token}`,
@@ -70,23 +70,24 @@ module.exports.login = async (req, res) => {
           },
         }
       );
-      
+
       if (data.error) {
         return res.status(401).send("Unauthorized");
       } else {
         const user = await User.findOne({ email: data.email });
+        const uniqueUserName = nanoid(6);
         if (!user) {
           const user = new User({
             name: data.name,
             email: data.email,
+            username: `User${uniqueUserName}`,
           });
-          console.log(user)
+          console.log(user);
           await user.save();
           return res.json({ google_token, user });
         }
 
         return res.json({ google_token, user });
-        
       }
     }
     // check if db has user
@@ -94,9 +95,10 @@ module.exports.login = async (req, res) => {
     if (!user) return res.json({ error: "No user found" });
     //check login method
     if (!user.password) {
-      return res.status(401).send("Please login via the method you used to signup")
-      
-  }
+      return res
+        .status(401)
+        .send("Please login via the method you used to signup");
+    }
     // check password
     const match = await comparePassword(password, user.password);
     if (!match) return res.status(400).send("Wrong password");
@@ -108,7 +110,7 @@ module.exports.login = async (req, res) => {
     user.secret = undefined;
     res.json({ token, user });
   } catch (err) {
-    console.log(err)
+    console.log(err);
     return res.status(401).send("Unauthorized");
   }
 };
@@ -156,7 +158,14 @@ module.exports.profileUpdate = async (req, res) => {
   try {
     const data = {};
     if (req.body.username) {
-      data.username = req.body.username;
+      const username = req.body.username
+      const user = await User.findOne({ username });
+      if (user && user._id != req.user._id) {
+        return res.json({ error: "User name already taken" });
+      } else {
+        data.username = req.body.username;
+      }
+      
     }
     if (req.body.about) {
       data.about = req.body.about;
