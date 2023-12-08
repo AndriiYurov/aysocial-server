@@ -17,35 +17,30 @@ module.exports.requireSignin = async (req, res, next) => {
       }
     );
 
-    req.user = await User.findOne({ email: data.email });
+    req.user = await User.findOne({ email: data.email }).select("_id");
+
     next();
-  
   } catch (err) {
-console.log("catch err", err)
-jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-  if (err) {
-    //   return res.json({ message: "Unauthorized" });
-    return res.status(401).send("Token expired or does not exist");
+    // console.log("catch err", err)
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) {
+        //   return res.json({ message: "Unauthorized" });
+        return res.status(401).send("Token expired or does not exist");
+      }
+
+      req.user = decoded;
+
+      next();
+    });
   }
-
-  req.user = decoded;
-  next();
-});
-  }
-
-  
-
- 
-
-  
- 
 };
 
 module.exports.canEditDeletePost = async (req, res, next) => {
   try {
     const post = await Post.findById(req.params._id);
-    // console.log("POST in DELETE MIDDLEWRE =>", post);
-    if (req.user._id != post.postedBy) {
+    const userId = req.user._id.toString();
+
+    if (userId != post.postedBy) {
       return res.status(401).send("Unauthorized");
     } else {
       next();

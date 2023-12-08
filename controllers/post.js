@@ -82,6 +82,7 @@ module.exports.updatePost = async (req, res) => {
 };
 
 module.exports.deletePost = async (req, res) => {
+  console.log("CONTROLLER DELETE =>", req.user._id);
   try {
     const post = await Post.findByIdAndDelete(req.params._id);
     // remove image from cloudinary
