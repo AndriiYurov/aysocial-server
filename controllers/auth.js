@@ -290,7 +290,7 @@ module.exports.searchUser = async (req, res) => {
     // The i modifier is used to perform case-insensitive matching
     const user = await User.find({
       $or: [
-        { name: { $regex: query, $options: "i" } },
+        // { name: { $regex: query, $options: "i" } },
         { username: { $regex: query, $options: "i" } },
       ],
     }).select("-password -secret");
