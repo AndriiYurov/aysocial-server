@@ -82,7 +82,6 @@ module.exports.updatePost = async (req, res) => {
 };
 
 module.exports.deletePost = async (req, res) => {
-  console.log("CONTROLLER DELETE =>", req.user._id);
   try {
     const post = await Post.findByIdAndDelete(req.params._id);
     // remove image from cloudinary
@@ -191,12 +190,16 @@ module.exports.totalPosts = async (req, res) => {
 };
 
 module.exports.posts = async (req, res) => {
+  const currentPage = req.params.currentPage || 1;
+  const perPage = 10;
+
   try {
     const posts = await Post.find()
+      .skip((currentPage - 1) * perPage)
       .populate("postedBy", "_id name image")
       .populate("comments.postedBy", "_id name image")
       .sort({ createdAt: -1 })
-      .limit(12);
+      .limit(perPage);
     res.json(posts);
   } catch (err) {
     console.log(err);

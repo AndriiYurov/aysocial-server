@@ -23,6 +23,9 @@ const io = require("socket.io")(http, {
   },
 });
 
+const { Post } = require("./models/post");
+const { posts } = require("./controllers/post");
+
 mongoose.set("strictQuery", false);
 
 mongoose
@@ -58,10 +61,22 @@ fs.readdirSync("./routes").map((r) =>
 
 io.on("connect", (socket) => {
   // console.log("SOCKET.IO", socket.id);
-  socket.on("new-post", (newPost) => {
+  socket.on("new-post", async (newPost) => {
     // console.log("new post =>", newPost);
     // socket.emit("receive-message", message)
-    socket.broadcast.emit("new-post", newPost);
+    let result;
+    try {
+      const posts = await Post.find()
+        .populate("postedBy", "_id name image")
+        .populate("comments.postedBy", "_id name image")
+        .sort({ createdAt: -1 })
+        .limit(10);
+      result = posts;
+    } catch (err) {
+      console.log(err);
+    }
+
+    socket.broadcast.emit("updated-post", result);
   });
 });
 
